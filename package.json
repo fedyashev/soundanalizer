@@ -1,0 +1,14 @@
+{
+  "name": "sound",
+  "version": "1.0.0",
+  "description": "Sound analizer",
+  "scripts": {
+    "start": "serve ./src/",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "serve": "^10.1.2"
+  }
+}
