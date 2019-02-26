@@ -144,7 +144,7 @@ window.onload = () => {
         analizer.start();
     }
 
-    btnStop.onclick = async (e) => {
+    btnStop.onclick = e => {
         e.preventDefault();
         console.log('btn-stop');
         analizer.stopWithCallback(buffer => {
@@ -156,6 +156,10 @@ window.onload = () => {
                 max = item > max ? item : max
             });
             document.getElementById('max-amplitude').innerText = max;
+            document.getElementById('audio-buffer-length').innerText = buffer.length;
+            document.getElementById('audio-buffer-duration').innerText = buffer.duration;
+            document.getElementById('audio-buffer-channels').innerText = buffer.numberOfChannels;
+            document.getElementById('audio-buffer-rate').innerText = buffer.sampleRate;
         });
     }
 
