@@ -130,7 +130,7 @@ window.onload = () => {
 
     let analizer = new AudioAnalizer();
 
-    alert("Let's go!");
+    //alert("Let's go!");
 
     const btnStart = document.getElementById('btn-start');
     const btnStop = document.getElementById('btn-stop');
@@ -140,7 +140,7 @@ window.onload = () => {
     btnStart.onclick = e => {
         e.preventDefault();
         console.log('btn-start');
-        console.log(analizer);
+        //console.log(analizer);
         analizer.start();
     }
 
@@ -148,16 +148,21 @@ window.onload = () => {
         e.preventDefault();
         console.log('btn-stop');
         analizer.stopWithCallback(buffer => {
-            console.log(buffer);
+            //console.log(buffer);
             displayBuffer(buffer);
             const leftChannel = buffer.getChannelData(0);
             let max = leftChannel[0];
+            let rms = 0;
             leftChannel.forEach(item => {
                 max = item > max ? item : max
+                rms += item * item;
             });
-            document.getElementById('max-amplitude').innerText = max;
+            rms /= 1.0 * buffer.length;
+            rms = Math.sqrt(rms);
+            document.getElementById('max-amplitude').innerText = Number(max).toFixed(2);
+            document.getElementById('audio-buffer-rms').innerText = Number(rms).toFixed(4);
             document.getElementById('audio-buffer-length').innerText = buffer.length;
-            document.getElementById('audio-buffer-duration').innerText = buffer.duration;
+            document.getElementById('audio-buffer-duration').innerText = Number(buffer.duration).toFixed(2);
             document.getElementById('audio-buffer-channels').innerText = buffer.numberOfChannels;
             document.getElementById('audio-buffer-rate').innerText = buffer.sampleRate;
         });
@@ -181,9 +186,9 @@ function displayBuffer(buff /* is an AudioBuffer */) {
     const leftChannel = buff.getChannelData(0); // Float32Array describing left channel     
     const lineOpacity = canvasWidth / leftChannel.length;
     context.save();
-    context.fillStyle = '#080808';
+    context.fillStyle = '#666';
     context.fillRect(0, 0, canvasWidth, canvasHeight);
-    context.strokeStyle = '#46a0ba';
+    context.strokeStyle = '#e2e200';
     context.globalCompositeOperation = 'lighter';
     context.translate(0, canvasHeight / 2);
     //context.globalAlpha = 0.6 ; // lineOpacity ;
