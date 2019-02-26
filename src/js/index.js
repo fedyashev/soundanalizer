@@ -37,6 +37,7 @@ class AudioAnalizer {
 
     start() {
         console.log('start');
+        this.clear();
         this.state.mediaRecorder.start();
     }
 
@@ -92,7 +93,7 @@ class AudioAnalizer {
                     .decodeAudioData(fileReader.result)
                     .then(buffer => {
                         this.state.buffer = buffer;
-                        callback(buffer);
+                        callback({ buffer, audioCtx });
                     })
                     .catch(err => console.log(err));
             }
@@ -118,100 +119,121 @@ class AudioAnalizer {
 
 }
 
-// CANVAS
-const canvasWidth = window.innerWidth, canvasHeight = 120;
-const newCanvas = createCanvas(canvasWidth, canvasHeight);
-const context = newCanvas.getContext('2d');
+class Visualizer {
+    static createCanvasfromChannelData({ width = 960, height = 120, channelData = [], text = "" }) {
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+
+        const drawLines = channelData.length;
+        context.save();
+        context.fillStyle = '#333';
+        context.fillRect(0, 0, width, height);
+        context.strokeStyle = '#f00';
+        context.globalCompositeOperation = 'lighter';
+        context.translate(0, height / 2);
+        //context.globalAlpha = 0.6 ; // lineOpacity ;
+        context.lineWidth = 1;
+        const totalLength = channelData.length;
+        const eachBlock = Math.floor(totalLength / drawLines);
+        const lineGap = (width / drawLines);
+
+        context.beginPath();
+        for (let i = 0; i <= drawLines; i++) {
+            const audioBuffKey = Math.floor(eachBlock * i);
+            const x = i * lineGap;
+            const y = channelData[audioBuffKey] * height / 2;
+            context.moveTo(x, y);
+            context.lineTo(x, (y * -1));
+        }
+
+        if (text) {
+            context.fillStyle = "#ff0";
+            context.font = "10px Arial";
+            context.fillText(text, 10, height / 2 - 10);
+        }
+
+        context.stroke();
+        context.restore();
+
+        return canvas;
+    }
+}
 
 window.onload = () => {
 
-    document.getElementById('canvas-container').appendChild(newCanvas);
-    //document.body.appendChild(newCanvas);
-
     let analizer = new AudioAnalizer();
 
-    //alert("Let's go!");
+    const canvasContainer = document.getElementById('canvas-container');
+    const channelDataCanvas = Visualizer.createCanvasfromChannelData({
+        width: window.innerWidth,
+        height: 240,
+    });
+    canvasContainer.appendChild(channelDataCanvas);
 
     const btnStart = document.getElementById('btn-start');
     const btnStop = document.getElementById('btn-stop');
-    const btnPlay = document.getElementById('btn-play');
-    const btnClear = document.getElementById('btn-clear');
+
+    btnStart.hidden = false;
+    btnStop.hidden = true;
 
     btnStart.onclick = e => {
         e.preventDefault();
         console.log('btn-start');
-        //console.log(analizer);
+        btnStart.hidden = true;
+        btnStop.hidden = false;
         analizer.start();
     }
 
     btnStop.onclick = e => {
         e.preventDefault();
         console.log('btn-stop');
-        analizer.stopWithCallback(buffer => {
-            //console.log(buffer);
-            displayBuffer(buffer);
-            const leftChannel = buffer.getChannelData(0);
-            let max = leftChannel[0];
-            let rms = 0;
-            leftChannel.forEach(item => {
-                max = item > max ? item : max
-                rms += item * item;
-            });
-            rms /= 1.0 * buffer.length;
-            rms = Math.sqrt(rms);
-            document.getElementById('max-amplitude').innerText = Number(max).toFixed(2);
-            document.getElementById('audio-buffer-rms').innerText = Number(rms).toFixed(4);
-            document.getElementById('audio-buffer-length').innerText = buffer.length;
-            document.getElementById('audio-buffer-duration').innerText = Number(buffer.duration).toFixed(2);
-            document.getElementById('audio-buffer-channels').innerText = buffer.numberOfChannels;
-            document.getElementById('audio-buffer-rate').innerText = buffer.sampleRate;
+        btnStart.hidden = false;
+        btnStop.hidden = true;
+        analizer.stopWithCallback(({ buffer, audioCtx }) => {
+
+            const amplitudeToDecibel = value => {
+                return 20 * Math.log10(value);
+            }
+            
+            // Clear canvas container
+            const canvasContainer = document.getElementById('canvas-container');
+            while (canvasContainer.firstChild) {
+                canvasContainer.removeChild(canvasContainer.firstChild);
+            }
+
+            for (let i = 0; i < buffer.numberOfChannels; i++) {
+                const channelData = buffer.getChannelData(i);
+
+                let max = channelData[0];
+                let rms = 0;
+                channelData.forEach(item => {
+                    max = item > max ? item : max
+                    rms += item * item;
+                });
+                rms /= 1.0 * buffer.length;
+                rms = Math.sqrt(rms);
+
+                let text = [
+                    `CH ${i}`,
+                    `AMP ${amplitudeToDecibel(Number(max)).toFixed(2)} dB`,
+                    `RMS ${amplitudeToDecibel(Number(rms)).toFixed(2)} dB`,
+                    `${buffer.duration} s`,
+                    `${buffer.sampleRate} Hz`,
+                ].join(',   ');
+
+                const channelDataCanvas = Visualizer.createCanvasfromChannelData({
+                    width: window.innerWidth,
+                    height: 240,
+                    channelData,
+                    text
+                });
+
+                canvasContainer.appendChild(channelDataCanvas);
+            }
+
         });
     }
-
-    btnPlay.onclick = e => {
-        e.preventDefault();
-        console.log('btn-play');
-        analizer.play();
-    }
-
-    btnClear.onclick = e => {
-        e.preventDefault();
-        console.log('btn-clear');
-        analizer.clear();
-    }
-};
-
-function displayBuffer(buff /* is an AudioBuffer */) {
-    const drawLines = 500;
-    const leftChannel = buff.getChannelData(0); // Float32Array describing left channel     
-    const lineOpacity = canvasWidth / leftChannel.length;
-    context.save();
-    context.fillStyle = '#666';
-    context.fillRect(0, 0, canvasWidth, canvasHeight);
-    context.strokeStyle = '#e2e200';
-    context.globalCompositeOperation = 'lighter';
-    context.translate(0, canvasHeight / 2);
-    //context.globalAlpha = 0.6 ; // lineOpacity ;
-    context.lineWidth = 1;
-    const totallength = leftChannel.length;
-    const eachBlock = Math.floor(totallength / drawLines);
-    const lineGap = (canvasWidth / drawLines);
-
-    context.beginPath();
-    for (let i = 0; i <= drawLines; i++) {
-        const audioBuffKey = Math.floor(eachBlock * i);
-        const x = i * lineGap;
-        const y = leftChannel[audioBuffKey] * canvasHeight / 2;
-        context.moveTo(x, y);
-        context.lineTo(x, (y * -1));
-    }
-    context.stroke();
-    context.restore();
-}
-
-function createCanvas(w, h) {
-    const newCanvas = document.createElement('canvas');
-    newCanvas.width = w;
-    newCanvas.height = h;
-    return newCanvas;
 };

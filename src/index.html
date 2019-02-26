@@ -4,32 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sound Analizer</title>
+    <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
     <div>
-        <button id="btn-start">Start</button>
+        <img id="btn-start" src="img/record.png" alt="record" title="record" width="32px" height="32px"/>
     </div>
     <div>
-        <button id="btn-stop">Stop</button>
+        <img id="btn-stop" src="img/stop.png" alt="stop" title="stop" width="32px" height="32px"/>
     </div>
-    <div>
-        <button id="btn-play">Play</button>
-    </div>
-    <div>
-        <button id="btn-clear">Clear</button>
-    </div>
-    <div id="canvas-container">
-
-    </div>
-    <div id="info-container">
-        <p>Max amplitude: <span id="max-amplitude"></span></p>
-        <p>RMS: <span id="audio-buffer-rms"></span></p>
-        <p>Length: <span id="audio-buffer-length"></span></p>
-        <p>Duration: <span id="audio-buffer-duration"></span></p>
-        <p>Channels: <span id="audio-buffer-channels"></span></p>
-        <p>Sample rate: <span id="audio-buffer-rate"></span></p>
-    </div>
-
+    <div id="canvas-container"></div>
     <script src="js/index.js"></script>
 </body>
 </html>
